@@ -287,6 +287,7 @@ public class ScheduleContainer {
                 }
             }
         }
+        retVal.sort(null);
         return retVal;
     }
 
@@ -330,6 +331,7 @@ public class ScheduleContainer {
                 }
             }
         }
+        retVal.sort(null);
         return retVal;
     }
 }

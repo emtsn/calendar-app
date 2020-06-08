@@ -49,7 +49,9 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
             + "&nbsp;&nbsp;- Use <i>Select</i> to find a new location for your calendar<br>"
             + "&nbsp;&nbsp;- The settings file will always be in \"" + Settings.DEFAULT_SETTINGS_FILE + "\"<br>"
             + "- Use <i>Edit/New Event</i> to create a new event<br>"
-            + "- Use <i>View/Today</i> to view the events for today<br>"
+            + "- Use <i>View/Events/Today</i> to view the events for today<br>"
+            + "- Use <i>View/Events/This Week</i> to view the events for this week<br>"
+            + "- Use <i>View/Events/Find</i> to find events between a range<br>"
             + "- Use <i>View/Events</i> to view all events<br>"
             + "- Use <i>View/Calendar</i> to view the calendar<br>"
             + "&nbsp;&nbsp;- Use left/right button below to switch months<br>"
@@ -333,16 +335,16 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
         showEventsMenuItem.addActionListener(e -> showDisplay(Display.AllEvents));
         showMonthMenuItem.addActionListener(e -> showDisplay(Display.MonthCalendar));
         showHolidayMenuItem.addActionListener(e -> showDisplay(Display.Holidays));
-        viewMenu.add(createDateMenu());
+        viewMenu.add(createViewEventsMenu());
         viewMenu.add(showEventsMenuItem);
         viewMenu.add(showMonthMenuItem);
         viewMenu.add(showHolidayMenuItem);
         return viewMenu;
     }
 
-    // EFFECTS: creates and returns the date section of the view menu
-    private JMenu createDateMenu() {
-        JMenu dayMenu = new JMenu("Date");
+    // EFFECTS: creates and returns the events section of the view menu
+    private JMenu createViewEventsMenu() {
+        JMenu eventsMenu = new JMenu("Events");
         JMenuItem todayMenuItem = new JMenuItem("Today");
         JMenuItem weekMenuItem = new JMenuItem("This Week");
         JMenuItem findMenuItem = new JMenuItem("Find");
@@ -350,10 +352,10 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
         weekMenuItem.addActionListener(e -> showEventsForDates(
                 TimeUtility.atStartOfWeek(getCurrentDate()), TimeUtility.atEndOfWeek(getCurrentDate())));
         findMenuItem.addActionListener(e -> openFindWindow());
-        dayMenu.add(todayMenuItem);
-        dayMenu.add(weekMenuItem);
-        dayMenu.add(findMenuItem);
-        return dayMenu;
+        eventsMenu.add(todayMenuItem);
+        eventsMenu.add(weekMenuItem);
+        eventsMenu.add(findMenuItem);
+        return eventsMenu;
     }
 
     // EFFECTS: creates and returns the help section of the menu bar
