@@ -295,19 +295,14 @@ public class ScheduleContainer {
     // EFFECTS: returns a list of repeatEvents between startDate and endDate
     @JsonIgnore
     public List<RepeatEvent> getRepeatEventsBetweenDates(LocalDate startDate, LocalDate endDate) {
-        LocalDate afterEnd;
-        if (endDate.equals(LocalDate.MAX)) {
-            afterEnd = endDate;
-            if (startDate.equals(LocalDate.MIN)) {
-                return repeatEvents;
-            }
-        } else {
-            afterEnd = endDate.plusDays(1);
-        }
+        LocalDate afterEnd = endDate.equals(LocalDate.MAX) ? endDate : endDate.plusDays(1);
         boolean includeAllMonth = ChronoUnit.MONTHS.between(startDate, afterEnd) >= 1;
         boolean sameMonth = startDate.getMonthValue() == endDate.getMonthValue();
         boolean includeAllWeek = ChronoUnit.WEEKS.between(startDate, afterEnd) >= 1;
         boolean sameWeek = startDate.getDayOfWeek().getValue() <= endDate.getDayOfWeek().getValue();
+        if (includeAllMonth && includeAllWeek) {
+            return repeatEvents;
+        }
         return getRepeatEventsBetweenDates(startDate, endDate, includeAllMonth, includeAllWeek, sameMonth, sameWeek);
     }
 
