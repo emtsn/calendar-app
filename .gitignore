@@ -1,0 +1,8 @@
+*.class
+workspace.xml
+/calendar_data/
+/.idea/libraries/
+/data/
+/.idea/
+/checkstyle.xml
+/out/
