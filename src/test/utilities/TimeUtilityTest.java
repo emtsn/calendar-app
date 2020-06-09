@@ -4,11 +4,7 @@ import model.exceptions.TimeOverflowException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.Date;
+import java.time.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static utilities.TimeUtility.*;
@@ -184,13 +180,78 @@ public class TimeUtilityTest {
 
     @Test
     void testDaysBetween() {
-        assertEquals(1, TimeUtility.daysBetweenDow(DayOfWeek.SUNDAY, DayOfWeek.MONDAY));
-        assertEquals(6, TimeUtility.daysBetweenDow(DayOfWeek.MONDAY, DayOfWeek.SUNDAY));
-        assertEquals(2, TimeUtility.daysBetweenDow(DayOfWeek.TUESDAY, DayOfWeek.THURSDAY));
-        assertEquals(5, TimeUtility.daysBetweenDow(DayOfWeek.THURSDAY, DayOfWeek.TUESDAY));
-        assertEquals(3, TimeUtility.daysBetweenDow(DayOfWeek.MONDAY, DayOfWeek.THURSDAY));
-        assertEquals(4, TimeUtility.daysBetweenDow(DayOfWeek.THURSDAY, DayOfWeek.MONDAY));
-        assertEquals(5, TimeUtility.daysBetweenDow(DayOfWeek.WEDNESDAY, DayOfWeek.MONDAY));
-        assertEquals(2, TimeUtility.daysBetweenDow(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY));
+        assertEquals(1, daysBetweenDow(DayOfWeek.SUNDAY, DayOfWeek.MONDAY));
+        assertEquals(6, daysBetweenDow(DayOfWeek.MONDAY, DayOfWeek.SUNDAY));
+        assertEquals(2, daysBetweenDow(DayOfWeek.TUESDAY, DayOfWeek.THURSDAY));
+        assertEquals(5, daysBetweenDow(DayOfWeek.THURSDAY, DayOfWeek.TUESDAY));
+        assertEquals(3, daysBetweenDow(DayOfWeek.MONDAY, DayOfWeek.THURSDAY));
+        assertEquals(4, daysBetweenDow(DayOfWeek.THURSDAY, DayOfWeek.MONDAY));
+        assertEquals(5, daysBetweenDow(DayOfWeek.WEDNESDAY, DayOfWeek.MONDAY));
+        assertEquals(2, daysBetweenDow(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY));
+    }
+
+    @Test
+    void testIsMonths() {
+        LocalDate start1 = LocalDate.of(1220, 2, 1);
+        LocalDate start2 = LocalDate.of(1320, 10, 1);
+        LocalDate start3 = LocalDate.of(1950, 5, 1);
+        LocalDate[] start = new LocalDate[]{ start1, start2, start3 };
+        LocalDate end1 = LocalDate.of(1230, 12, 31);
+        LocalDate end2 = LocalDate.of(1500, 4, 30);
+        LocalDate end3 = LocalDate.of(2012, 2, 29);
+        LocalDate[] end = new LocalDate[]{ end1, end2, end3 };
+        LocalDate notStart1 = LocalDate.of(1923, 1, 2);
+        LocalDate notStart2 = LocalDate.of(1672, 7, 2);
+        LocalDate notStart3 = LocalDate.of(2112, 9, 2);
+        LocalDate[] notStart = new LocalDate[]{ notStart1, notStart2, notStart3 };
+        LocalDate notEnd1 = LocalDate.of(2012, 2, 28);
+        LocalDate notEnd2 = LocalDate.of(3030, 5, 30);
+        LocalDate notEnd3 = LocalDate.of(1530, 3, 29);
+        LocalDate[] notEnd = new LocalDate[]{ notEnd1, notEnd2, notEnd3 };
+        for (int i = 0; i < start.length; i++) {
+            assertTrue(isMonths(start[i], end[i]));
+            assertFalse(isMonths(start[i], notEnd[i]));
+            assertFalse(isMonths(notStart[i], end[i]));
+            assertFalse(isMonths(notStart[i], notEnd[i]));
+            assertFalse(isMonths(start[i], start[i]));
+            assertFalse(isMonths(end[i], start[i]));
+        }
+    }
+
+    @Test
+    void testIsSameMonth() {
+        LocalDate d1 = LocalDate.of(1980, 10, 15);
+        LocalDate d2 = LocalDate.of(1980, 10, 16);
+        LocalDate d3 = LocalDate.of(1980, 5, 1);
+        LocalDate d4 = LocalDate.of(2000, 10, 14);
+        LocalDate d5 = LocalDate.of(2000, 5, 20);
+        assertTrue(isSameMonth(d1, d2));
+        assertFalse(isSameMonth(d1, d3));
+        assertFalse(isSameMonth(d1, d4));
+        assertFalse(isSameMonth(d1, d5));
+    }
+
+    @Test
+    void testIsWeek() {
+        LocalDate date = LocalDate.of(2013, 1, 13);
+        for (int i = 0; i < 10; i++) {
+            assertTrue(isWeek(date.plusDays(7 * i), date.plusDays((7 * i) + 6)));
+        }
+        for (int i = 1; i < 30; i++) {
+            if (i % 7 == 0) {
+                assertTrue(isWeek(date.plusDays(i), date.plusDays(6 + i)));
+            } else {
+                assertFalse(isWeek(date.plusDays(i), date.plusDays(6 + i)));
+            }
+        }
+        for (int i = 1; i <= 6; i++) {
+            assertFalse(isWeek(date.plusDays(i), date.plusDays(6)));
+        }
+        for (int i = 0; i <= 5; i++) {
+            assertFalse(isWeek(date, date.plusDays(i)));
+        }
+        for (int i = 1; i < 20; i++) {
+            assertFalse(isWeek(date, date.plusDays((7 * i) + 6)));
+        }
     }
 }

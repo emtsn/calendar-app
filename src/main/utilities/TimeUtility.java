@@ -95,6 +95,22 @@ public final class TimeUtility {
         return date.plusDays(daysBetweenDow(date.getDayOfWeek(), DayOfWeek.SATURDAY));
     }
 
+    // EFFECTS: return true if the days between startDate and endDate mark a week (SUN-SAT)
+    public static boolean isWeek(LocalDate startDate, LocalDate endDate) {
+        return startDate.getDayOfWeek().equals(DayOfWeek.SUNDAY) && endDate.getDayOfWeek().equals(DayOfWeek.SATURDAY)
+                && startDate.equals(atStartOfWeek(endDate));
+    }
+
+    // EFFECTS: returns true if there are exact months between startDate and endDate
+    public static boolean isMonths(LocalDate startDate, LocalDate endDate) {
+        return startDate.getDayOfMonth() == 1 && endDate.getDayOfMonth() == endDate.lengthOfMonth();
+    }
+
+    // EFFECTS: returns true if two dates are on the same month
+    public static boolean isSameMonth(LocalDate date1, LocalDate date2) {
+        return date1.getYear() == date2.getYear() && date1.getMonth().equals(date2.getMonth());
+    }
+
     // EFFECTS: returns the number of days it takes to get from first DayOfWeek to second DayOfWeek
     public static int daysBetweenDow(DayOfWeek first, DayOfWeek second) {
         int firstVal = first.getValue();

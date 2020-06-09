@@ -21,12 +21,9 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
 import java.time.*;
-import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.*;
 import java.util.List;
-
-import static utilities.TimeUtility.dowValues;
 
 public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPattern {
     private enum Display {
@@ -505,7 +502,7 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
     // EFFECTS: creates a calendar display
     private JPanel createCalendarDisplay() {
         JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.add(new TitleLabel(selectedYearMonth().format(DateTimeFormatter.ofPattern("yyyy MMMM"))),
+        mainPanel.add(new TitleLabel(selectedYearMonth().format(YEAR_MONTH_FORMATTER)),
                 BorderLayout.PAGE_START);
         mainPanel.add(createCalendar(), BorderLayout.CENTER);
         mainPanel.add(createToolPanel(e -> moveMonths(-1), e -> moveMonths(1)), BorderLayout.PAGE_END);
@@ -545,7 +542,7 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
         JPanel dowLabels = new JPanel();
         dowLabels.setBackground(BG_PANEL_COLOR);
         dowLabels.setLayout(new GridLayout(1,7));
-        for (DayOfWeek dayOfWeek : dowValues(DayOfWeek.SUNDAY)) {
+        for (DayOfWeek dayOfWeek : TimeUtility.dowValues(DayOfWeek.SUNDAY)) {
             JLabel dowLabel = new JLabel(dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
                     SwingConstants.CENTER);
             dowLabels.add(dowLabel);
@@ -679,6 +676,13 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
         if (startDate.equals(endDate)) {
             titleText = titleText.concat("for " + startDate.format(DATE_FORMATTER)
                     + (startDate.equals(getCurrentDate()) ? " (Today)" : ""));
+        } else if (TimeUtility.isWeek(startDate, endDate)) {
+            titleText = titleText.concat("for Week of " + startDate.format(DATE_FORMATTER)
+                    +  "~" + endDate.getDayOfMonth());
+        } else if (TimeUtility.isMonths(startDate, endDate)) {
+            titleText = titleText.concat((TimeUtility.isSameMonth(startDate, endDate)
+                    ? "for " : ("between " + startDate.format(MONTH_FORMATTER) + "~"))
+                    + endDate.format(YEAR_MONTH_FORMATTER));
         } else {
             titleText = titleText.concat("between " + startDate.format(DATE_FORMATTER)
                     + "~" + endDate.format(DATE_FORMATTER));

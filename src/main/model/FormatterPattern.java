@@ -3,8 +3,13 @@ package model;
 import java.time.format.DateTimeFormatter;
 
 public interface FormatterPattern {
+    String YEAR_PATTERN = "yyyy";
+    String MONTH_PATTERN = "MMMM";
+    String YEAR_MONTH_PATTERN = MONTH_PATTERN + " " + YEAR_PATTERN;
     String DATE_PATTERN = "yyyy/MM/dd";
     String TIME_PATTERN = "HH:mm";
+    DateTimeFormatter YEAR_MONTH_FORMATTER = DateTimeFormatter.ofPattern(YEAR_MONTH_PATTERN);
+    DateTimeFormatter MONTH_FORMATTER = DateTimeFormatter.ofPattern(MONTH_PATTERN);
     DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern(DATE_PATTERN + " " + TIME_PATTERN);
     DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(DATE_PATTERN);
     DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern(TIME_PATTERN);
