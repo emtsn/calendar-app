@@ -7,6 +7,7 @@ Features:
 - Event creator and editor
 - Holidays from a [web API](https://date.nager.at/API)
 - Saving and loading using [Jackson JSON Library](https://github.com/FasterXML/jackson)
+- Search for events in range
 - Changeable settings
 
 Tests created using JUnit.
