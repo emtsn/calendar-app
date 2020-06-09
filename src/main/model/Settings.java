@@ -18,6 +18,7 @@ public class Settings implements SaveLoadSystem {
     public static final boolean DEFAULT_SHOW_HOLIDAYS_ON_CALENDAR = true;
     public static final boolean DEFAULT_SHOW_HOLIDAYS_ON_EVENTS = true;
     public static final boolean DEFAULT_MERGE_HOLIDAY = true;
+    public static final boolean DEFAULT_LOAD_HOLIDAYS_FROM_WEB = false;
     public static final boolean DEFAULT_LOAD_ON_START = false;
     public static final boolean DEFAULT_BW_MODE = false;
     public static final boolean DEFAULT_FLIP_TEXT_COLOR = true;
@@ -33,6 +34,7 @@ public class Settings implements SaveLoadSystem {
     private boolean showHolidaysOnCalendar;
     private boolean showHolidaysOnEvents;
     private boolean mergeHoliday;
+    private boolean loadHolidaysFromWeb;
     private boolean loadOnStart;
     private boolean bwMode;
     private boolean flipTextColor;
@@ -59,6 +61,7 @@ public class Settings implements SaveLoadSystem {
         showHolidaysOnCalendar = DEFAULT_SHOW_HOLIDAYS_ON_CALENDAR;
         showHolidaysOnEvents = DEFAULT_SHOW_HOLIDAYS_ON_EVENTS;
         mergeHoliday = DEFAULT_MERGE_HOLIDAY;
+        loadHolidaysFromWeb = DEFAULT_LOAD_HOLIDAYS_FROM_WEB;
         loadOnStart = DEFAULT_LOAD_ON_START;
         bwMode = DEFAULT_BW_MODE;
         flipTextColor = DEFAULT_FLIP_TEXT_COLOR;
@@ -77,10 +80,48 @@ public class Settings implements SaveLoadSystem {
         showHolidaysOnCalendar = settings.showHolidaysOnCalendar;
         showHolidaysOnEvents = settings.showHolidaysOnEvents;
         mergeHoliday = settings.mergeHoliday;
+        loadHolidaysFromWeb = settings.loadHolidaysFromWeb;
         loadOnStart = settings.loadOnStart;
         bwMode = settings.bwMode;
         flipTextColor = settings.flipTextColor;
         highlightColor = settings.highlightColor;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Settings)) {
+            return false;
+        }
+        Settings settings = (Settings) o;
+        return ((showDate == settings.showDate) && (showRepeat == settings.showRepeat)
+                && (dimPastEvents == settings.dimPastEvents) && (confirmToDelete == settings.confirmToDelete)
+                && (showHolidaysOnCalendar == settings.showHolidaysOnCalendar)
+                && (showHolidaysOnEvents == settings.showHolidaysOnEvents)
+                && (mergeHoliday == settings.mergeHoliday) && (loadHolidaysFromWeb == settings.loadHolidaysFromWeb)
+                && (loadOnStart == settings.loadOnStart) && (bwMode == settings.bwMode)
+                && (flipTextColor == settings.flipTextColor) && (saveFile.equals(settings.saveFile))
+                && highlightColor.equals(settings.highlightColor));
+    }
+
+    @Override
+    public int hashCode() {
+        int result = saveFile.hashCode();
+        result = 31 * result + (showDate ? 1 : 0);
+        result = 31 * result + (showRepeat ? 1 : 0);
+        result = 31 * result + (dimPastEvents ? 1 : 0);
+        result = 31 * result + (confirmToDelete ? 1 : 0);
+        result = 31 * result + (showHolidaysOnCalendar ? 1 : 0);
+        result = 31 * result + (showHolidaysOnEvents ? 1 : 0);
+        result = 31 * result + (mergeHoliday ? 1 : 0);
+        result = 31 * result + (loadHolidaysFromWeb ? 1 : 0);
+        result = 31 * result + (loadOnStart ? 1 : 0);
+        result = 31 * result + (bwMode ? 1 : 0);
+        result = 31 * result + (flipTextColor ? 1 : 0);
+        result = 31 * result + highlightColor.hashCode();
+        return result;
     }
 
     // EFFECTS: saves this settings to settingsFile, returns true if successful
@@ -156,6 +197,10 @@ public class Settings implements SaveLoadSystem {
         return mergeHoliday;
     }
 
+    public boolean isLoadHolidaysFromWeb() {
+        return loadHolidaysFromWeb;
+    }
+
     public boolean isLoadOnStart() {
         return loadOnStart;
     }
@@ -206,6 +251,10 @@ public class Settings implements SaveLoadSystem {
 
     public void setMergeHoliday(boolean mergeHoliday) {
         this.mergeHoliday = mergeHoliday;
+    }
+
+    public void setLoadHolidaysFromWeb(boolean loadHolidaysFromWeb) {
+        this.loadHolidaysFromWeb = loadHolidaysFromWeb;
     }
 
     public void setLoadOnStart(boolean loadOnStart) {

@@ -9,7 +9,7 @@ import java.awt.event.WindowEvent;
 import java.time.LocalDate;
 
 public class FindFrame extends JFrame {
-    private static final int HEIGHT = 200;
+    private static final int HEIGHT = 180;
     private static final int WIDTH = 400;
 
     private VisualEditor editor;
@@ -22,6 +22,7 @@ public class FindFrame extends JFrame {
         initializeComponents();
         initializeDisplay();
         getContentPane().setBackground(VisualEditor.BG_PANEL_COLOR);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setVisible(true);
     }
 

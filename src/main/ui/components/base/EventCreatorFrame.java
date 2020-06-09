@@ -53,6 +53,7 @@ public class EventCreatorFrame extends JFrame {
         getContentPane().setBackground(VisualEditor.BG_PANEL_COLOR);
         initializeComponents();
         initializeDisplay();
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setVisible(true);
     }
 

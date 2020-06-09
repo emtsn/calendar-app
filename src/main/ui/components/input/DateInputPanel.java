@@ -11,6 +11,9 @@ import java.time.YearMonth;
 import static utilities.TimeUtility.intArray;
 
 public class DateInputPanel extends InputPanel {
+    private static final int MIN_YEAR = 1980;
+    private static final int MAX_YEAR = 2060;
+
     private JComboBox<Integer> yearBox;
     private JComboBox<Month> monthBox;
     private JComboBox<Integer> dayBox;
@@ -33,7 +36,7 @@ public class DateInputPanel extends InputPanel {
     // EFFECTS: initializes the components of the panel
     @Override
     public void initializeComponents() {
-        yearBox = new JComboBox<>(intArray(2000, 2050));
+        yearBox = new JComboBox<>(intArray(MIN_YEAR, MAX_YEAR));
         monthBox = new JComboBox<>(Month.values());
         dayBox = new JComboBox<>(intArray(1, 31));
         yearBox.setMaximumSize(yearBox.getPreferredSize());

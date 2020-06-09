@@ -59,8 +59,8 @@ public class HolidaysContainerTest {
         h2 = new HolidaysContainer();
         h1.setSaveFile(TEST_SAVE_LOCATION);
         h2.setSaveFile(TEST_SAVE_LOCATION);
-        h1.setDoWeb(false);
-        h2.setDoWeb(false);
+        h1.setSettings(false, false);
+        h1.setSettings(false, false);
     }
 
     @Test
@@ -80,14 +80,13 @@ public class HolidaysContainerTest {
 
     @Test
     void testWeb() {
+        List<MultiEvent> holidays;
         if (TEST_WEB) {
-            h1.setDoWeb(true);
-            List<MultiEvent> holidays = h1.getHolidays(2019, false);
+            h1.setSettings(false, true);
+            holidays = h1.getHolidays(2019);
             assertEquals(29, holidays.size());
-        } else {
-            h1.setDoWeb(false);
         }
-        List<MultiEvent> holidays = h1.getHolidays(0, false);
+        holidays = h1.getHolidays(0);
         assertEquals(0, holidays.size());
     }
 
@@ -114,8 +113,8 @@ public class HolidaysContainerTest {
         h1.save();
         h2.load();
         assertEquals(h1.getHolidaysMap().keySet().size(), h2.getHolidaysMap().keySet().size());
-        assertEquals(h1.getHolidays(2014, false).size(),
-                h2.getHolidays(2014, false).size());
+        assertEquals(h1.getHolidays(2014).size(),
+                h2.getHolidays(2014).size());
     }
 
     @Test
@@ -123,27 +122,27 @@ public class HolidaysContainerTest {
         h1.setHolidaysMap(createHolidaysMap());
         // holidays before but no dim
         String formatText = h1.getFormattedHolidaysText(2003,
-                LocalDate.of(2004, 7, 9), false, false);
+                LocalDate.of(2004, 7, 9), false);
         assertTrue(formatText.startsWith("<html>"));
         assertFalse(formatText.startsWith("<html>" + HolidaysContainer.HTML_DIM_FONT_TAG));
         assertTrue(formatText.endsWith("</html>"));
         assertFalse(formatText.endsWith("</font></html>"));
         // Holidays are before
         formatText = h1.getFormattedHolidaysText(2003,
-                LocalDate.of(2004, 7, 9), false, true);
+                LocalDate.of(2004, 7, 9), true);
         assertTrue(formatText.length() > 27);
         assertTrue(formatText.startsWith("<html>" + HolidaysContainer.HTML_DIM_FONT_TAG));
         assertTrue(formatText.endsWith("</font></html>"));
         // holidays are after
         formatText = h1.getFormattedHolidaysText(2003,
-                LocalDate.of(2002, 7, 9), false, true);
+                LocalDate.of(2002, 7, 9), true);
         assertTrue(formatText.startsWith("<html>"));
         assertFalse(formatText.startsWith("<html>" + HolidaysContainer.HTML_DIM_FONT_TAG));
         assertTrue(formatText.endsWith("</html>"));
         assertFalse(formatText.endsWith("</font></html>"));
         // holidays some are before some are after
         formatText = h1.getFormattedHolidaysText(2003,
-                LocalDate.of(2003, 7, 9), false, true);
+                LocalDate.of(2003, 7, 9), true);
         assertTrue(formatText.startsWith("<html>" + HolidaysContainer.HTML_DIM_FONT_TAG));
         assertTrue(formatText.endsWith("</html>"));
         assertFalse(formatText.endsWith("</font></html>"));
@@ -153,7 +152,8 @@ public class HolidaysContainerTest {
     void testHasEvents() {
         h1.setHolidaysMap(createHolidaysMap());
         YearMonth yearMonth = YearMonth.of(2003, 3);
-        boolean[] hasEvents = h1.createHasHolidaysForYearMonth(yearMonth, true);
+        h1.setSettings(true, false);
+        boolean[] hasEvents = h1.createHasHolidaysForYearMonth(yearMonth);
         assertEquals(yearMonth.lengthOfMonth(), hasEvents.length);
         for (int i = 0; i < yearMonth.lengthOfMonth(); i++) {
             if (i + 1 == 9 || i + 1 == 13) {
@@ -167,8 +167,8 @@ public class HolidaysContainerTest {
     @Test
     void testGetForDate() {
         h1.setHolidaysMap(createHolidaysMap());
-        List<MultiEvent> forDate1 = h1.getHolidayForDate(LocalDate.of(2011, 6, 2), false);
-        List<MultiEvent> forDate2 = h1.getHolidayForDate(LocalDate.of(2011, 6, 3), false);
+        List<MultiEvent> forDate1 = h1.getHolidayForDate(LocalDate.of(2011, 6, 2));
+        List<MultiEvent> forDate2 = h1.getHolidayForDate(LocalDate.of(2011, 6, 3));
         assertEquals(3, forDate1.size());
         assertEquals(0, forDate2.size());
     }

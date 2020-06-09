@@ -5,9 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.awt.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class SettingsTest {
     public static final String TEST_SAVE_FILE = "data/testData.json";
@@ -36,6 +34,7 @@ public class SettingsTest {
         assertEquals(Settings.DEFAULT_SHOW_HOLIDAYS_ON_CALENDAR, s.isShowHolidaysOnCalendar());
         assertEquals(Settings.DEFAULT_SHOW_HOLIDAYS_ON_EVENTS, s.isShowHolidaysOnEvents());
         assertEquals(Settings.DEFAULT_MERGE_HOLIDAY, s.isMergeHoliday());
+        assertEquals(Settings.DEFAULT_LOAD_HOLIDAYS_FROM_WEB, s.isLoadHolidaysFromWeb());
         assertEquals(Settings.DEFAULT_LOAD_ON_START, s.isLoadOnStart());
         assertEquals(Settings.DEFAULT_BW_MODE, s.isBwMode());
         assertEquals(Settings.DEFAULT_FLIP_TEXT_COLOR, s.isFlipTextColor());
@@ -57,6 +56,7 @@ public class SettingsTest {
         assertEquals(!Settings.DEFAULT_SHOW_HOLIDAYS_ON_CALENDAR, s.isShowHolidaysOnCalendar());
         assertEquals(!Settings.DEFAULT_SHOW_HOLIDAYS_ON_EVENTS, s.isShowHolidaysOnEvents());
         assertEquals(!Settings.DEFAULT_MERGE_HOLIDAY, s.isMergeHoliday());
+        assertEquals(!Settings.DEFAULT_LOAD_HOLIDAYS_FROM_WEB, s.isLoadHolidaysFromWeb());
         assertEquals(!Settings.DEFAULT_LOAD_ON_START, s.isLoadOnStart());
         assertEquals(!Settings.DEFAULT_BW_MODE, s.isBwMode());
         assertEquals(!Settings.DEFAULT_FLIP_TEXT_COLOR, s.isFlipTextColor());
@@ -78,6 +78,7 @@ public class SettingsTest {
         s.setShowHolidaysOnCalendar(!Settings.DEFAULT_SHOW_HOLIDAYS_ON_CALENDAR);
         s.setShowHolidaysOnEvents(!Settings.DEFAULT_SHOW_HOLIDAYS_ON_EVENTS);
         s.setMergeHoliday(!Settings.DEFAULT_MERGE_HOLIDAY);
+        s.setLoadHolidaysFromWeb(!Settings.DEFAULT_LOAD_HOLIDAYS_FROM_WEB);
         s.setLoadOnStart(!Settings.DEFAULT_LOAD_ON_START);
         s.setBwMode(!Settings.DEFAULT_BW_MODE);
         s.setFlipTextColor(!Settings.DEFAULT_FLIP_TEXT_COLOR);
@@ -115,5 +116,13 @@ public class SettingsTest {
         assertFalse(s1.load());
         s1.setSettingsFile("data/test/settings.json");
         assertFalse(s1.save());
+    }
+
+    @Test
+    void testEquals() {
+        assertEquals(s1, s1);
+        assertNotEquals(s1, "");
+        assertEquals(s1, s2);
+        assertEquals(s1.hashCode(), s1.hashCode());
     }
 }

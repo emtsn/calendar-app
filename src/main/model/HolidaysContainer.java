@@ -1,7 +1,6 @@
 package model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import network.PageReader;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -18,19 +17,21 @@ import static model.FormatterPattern.DATE_DASH_FORMATTER;
 
 public class HolidaysContainer implements SaveLoadSystem {
     public static final String HTML_DIM_FONT_TAG = "<font color=#999999>";
+    public static final String COUNTRY_CODE = "CA";
 
     private Map<Integer, List<MultiEvent>> yearHolidays;
     private String saveFile;
+    private boolean merge;
     private boolean doWeb;
 
     public HolidaysContainer() {
         yearHolidays = new HashMap<>();
         saveFile = Settings.DEFAULT_HOLIDAYS_FILE;
-        doWeb = true;
     }
 
     @JsonIgnore
-    public void setDoWeb(boolean doWeb) {
+    public void setSettings(boolean merge, boolean doWeb) {
+        this.merge = merge;
         this.doWeb = doWeb;
     }
 
@@ -54,6 +55,7 @@ public class HolidaysContainer implements SaveLoadSystem {
             SaveLoadSystem.saveWithJackson(this, saveFile);
         } catch (IOException e) {
             e.printStackTrace();
+            System.out.println("Failed to save holidays.");
             success = false;
         }
         return success;
@@ -66,6 +68,7 @@ public class HolidaysContainer implements SaveLoadSystem {
             setHolidaysMap(SaveLoadSystem.loadWithJackson(saveFile, HolidaysContainer.class).getHolidaysMap());
         } catch (IOException e) {
             e.printStackTrace();
+            System.out.println("Failed to load holidays.");
             success = false;
         }
         return success;
@@ -99,10 +102,10 @@ public class HolidaysContainer implements SaveLoadSystem {
 
     // MODIFIES: this
     // EFFECTS: updates the current holidays for a year if missing or changed and returns it
-    public List<MultiEvent> getHolidays(int year, boolean merge) {
+    public List<MultiEvent> getHolidays(int year) {
         List<MultiEvent> holidays = yearHolidays.get(year);
         if (doWeb && (holidays == null || holidays.size() < 1)) {
-            String theURL = "https://date.nager.at/api/v2/PublicHolidays/" + year + "/CA";
+            String theURL = "https://date.nager.at/api/v2/PublicHolidays/" + year + "/" + COUNTRY_CODE;
             try {
                 holidays = getHolidaysFrom(new JSONArray(PageReader.readWebPage(theURL)));
                 yearHolidays.put(year, holidays);
@@ -122,23 +125,23 @@ public class HolidaysContainer implements SaveLoadSystem {
 
     // MODIFIES: this
     // EFFECTS: returns a list of all dateEvents in schedule that are in yearMonth
-    public List<MultiEvent> getHolidaysForYearMonth(YearMonth yearMonth, boolean merge) {
-        List<MultiEvent> holidaysForYear = getHolidays(yearMonth.getYear(), merge);
+    public List<MultiEvent> getHolidaysForYearMonth(YearMonth yearMonth) {
+        List<MultiEvent> holidaysForYear = getHolidays(yearMonth.getYear());
         return EventUtility.eventsBetweenDates(yearMonth.atDay(1), yearMonth.atEndOfMonth(),
                 holidaysForYear);
     }
 
     // MODIFIES: this
     // EFFECTS: updates and returns holidays
-    public List<MultiEvent> getHolidayForDate(LocalDate date, boolean merge) {
-        List<MultiEvent> holidaysForYear = getHolidays(date.getYear(), merge);
+    public List<MultiEvent> getHolidayForDate(LocalDate date) {
+        List<MultiEvent> holidaysForYear = getHolidays(date.getYear());
         return EventUtility.eventsBetweenDates(date, date, holidaysForYear);
     }
 
     // MODIFIES: this
     // EFFECTS: updates and returns a formatted text of all of a list of holidays
-    public String getFormattedHolidaysText(int year, LocalDate currentDate, boolean merge, boolean doDim) {
-        List<MultiEvent> holidays = getHolidays(year, merge);
+    public String getFormattedHolidaysText(int year, LocalDate currentDate, boolean doDim) {
+        List<MultiEvent> holidays = getHolidays(year);
         String text = "<html>";
         for (int i = 0; i < holidays.size(); i++) {
             text = text.concat(getFormattedHolidayText(holidays.get(i), currentDate, doDim));
@@ -152,9 +155,9 @@ public class HolidaysContainer implements SaveLoadSystem {
 
     // MODIFIES: this
     // EFFECTS: updates and returns an array of booleans for a month, where values correspond to a holiday on that day
-    public boolean[] createHasHolidaysForYearMonth(YearMonth yearMonth, boolean merge) {
+    public boolean[] createHasHolidaysForYearMonth(YearMonth yearMonth) {
         boolean[] hasHolidays = new boolean[yearMonth.lengthOfMonth()];
-        List<MultiEvent> holidaysForMonth = getHolidaysForYearMonth(yearMonth, merge);
+        List<MultiEvent> holidaysForMonth = getHolidaysForYearMonth(yearMonth);
         for (MultiEvent holiday : holidaysForMonth) {
             hasHolidays[holiday.getDate().getDayOfMonth() - 1] = true;
         }

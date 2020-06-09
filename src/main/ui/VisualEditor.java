@@ -2,13 +2,13 @@ package ui;
 
 import model.*;
 import ui.components.base.FindFrame;
+import ui.components.base.SettingsFrame;
 import ui.components.display.DateEventPanel;
 import ui.components.display.EventPanel;
 import ui.components.display.RepeatEventPanel;
 import ui.components.display.TitleLabel;
 import ui.components.base.EventCreatorFrame;
 import ui.components.base.EventEditorFrame;
-import ui.components.input.ColorInputPanel;
 import utilities.TimeUtility;
 
 import javax.swing.*;
@@ -16,7 +16,8 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
 import java.time.*;
@@ -41,22 +42,31 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
     public static final int WIDTH = 500;
 
     private static final String HELP_TEXT
-            = "<html>- Use <i>File/New</i> to create a new schedule<br>"
-            + "- Use <i>File/Open</i> to open an existing schedule<br>"
-            + "- Use <i>File/Save</i> to save the current schedule<br>"
-            + "- Use <i>File/Save As</i> to save the current schedule at a directory<br>"
-            + "- Use <i>File/Settings</i> to view settings<br>"
-            + "&nbsp;&nbsp;- Use <i>Select</i> to find a new location for your calendar<br>"
-            + "&nbsp;&nbsp;- The settings file will always be in \"" + Settings.DEFAULT_SETTINGS_FILE + "\"<br>"
-            + "- Use <i>Edit/New Event</i> to create a new event<br>"
-            + "- Use <i>View/Events/Today</i> to view the events for today<br>"
-            + "- Use <i>View/Events/This Week</i> to view the events for this week<br>"
-            + "- Use <i>View/Events/Find</i> to find events between a range<br>"
-            + "- Use <i>View/Events</i> to view all events<br>"
-            + "- Use <i>View/Calendar</i> to view the calendar<br>"
-            + "&nbsp;&nbsp;- Use left/right button below to switch months<br>"
+            = "<html>&nbsp;<b>File</b><br>"
+            + "- Use <u>New</u> to create a new schedule<br>"
+            + "- Use <u>Load</u> to load from the current schedule<br>"
+            + "- Use <u>Open</u> to open an existing schedule from a directory<br>"
+            + "- Use <u>Save</u> to save the current schedule<br>"
+            + "- Use <u>Save As</u> to save the current schedule at a directory<br>"
+            + "- Use <u>Settings</u> to open the settings window<br>"
+            + "&nbsp;<b>Edit</b><br>"
+            + "- Use <u>New Event</u> to create a new event<br>"
+            + "&nbsp;<b>View</b><br>"
+            + "- Use <u>Events/Today</u> to view the events for today<br>"
+            + "- Use <u>Events/This Week</u> to view the events for this week<br>"
+            + "- Use <u>Events/This Month</u> to view the events for this month<br>"
+            + "- Use <u>Events/Find</u> to find events between a range<br>"
+            + "- Use <u>All Events</u> to view all events<br>"
+            + "&nbsp;&nbsp;- Click on an date event to jump to the date<br>"
+            + "- Use <u>Calendar</u> to view the calendar<br>"
             + "&nbsp;&nbsp;- Click on a date to view the date's events<br>"
-            + "- Use <i>View/Holidays</i> to view the holidays for this year";
+            + "- Use <u>Holidays</u> to view the holidays for this year";
+    private static final String UNSAVED_HEADER = "<html>You have unsaved changes to your current schedule.<br>";
+    private static final String UNSAVED_WARNING_MESSAGE = UNSAVED_HEADER + "Do you still want to exit?</html>";
+    private static final String NEW_FILE_WARNING_MESSAGE = "<html>Create new schedule?</html>";
+    private static final String UNSAVED_OPEN_WARNING_MESSAGE = UNSAVED_HEADER + "Do you still want to open?</html>";
+    private static final String LOAD_WARNING_MESSAGE = "<html>Load from currently set save file?</html>";
+    private static final String UNSAVED_LOAD_WARNING_MESSAGE = UNSAVED_HEADER + "Do you still want to load?</html>";
 
     private static final int DATE_BOX_GAP = 0;
     private static final boolean DATE_BOX_DRAW_FULL_BORDER = true;
@@ -84,11 +94,17 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
     private int selectedHolidaysYear;
 
     private Settings currentSettings;
+    private SettingsFrame settingsFrame;
+
+    private boolean changedSinceLastSave;
 
     public VisualEditor(String name) {
         super(name);
         File file = new File(Settings.DEFAULT_DIRECTORY);
-        file.mkdirs();
+        if (file.mkdirs()) {
+            showMessage("<html>Created the default directory at<br>" + System.getProperty("user.dir")
+                    + "/" + Settings.DEFAULT_DIRECTORY + "</html>");
+        }
         initializeFields();
         initializeBaseDisplay();
         initializeSchedule();
@@ -107,8 +123,29 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
         currentDisplay = Display.MonthCalendar;
         currentHolidays = new HolidaysContainer();
         currentSettings = new Settings();
-        currentSettings.load();
-        currentHolidays.load();
+        changedSinceLastSave = false;
+        initializeHolidaysAndSettings();
+    }
+
+    // MODIFIES: this
+    // EFFECTS: loads from the settings and holidays file, creates them if they don't exists, and initialize holidays
+    private void initializeHolidaysAndSettings() {
+        if (!currentSettings.load()) {
+            showMessage("<html>Created the default settings file at<br>" + System.getProperty("user.dir")
+                    + "/" + Settings.DEFAULT_SETTINGS_FILE + "</html>");
+            currentSettings.save();
+        }
+        if (!currentHolidays.load()) {
+            showMessage("<html>Created the default holidays file at<br>" + System.getProperty("user.dir")
+                    + "/" + Settings.DEFAULT_HOLIDAYS_FILE + "</html>");
+            currentHolidays.save();
+        }
+        currentHolidays.setSettings(currentSettings.isMergeHoliday(), currentSettings.isLoadHolidaysFromWeb());
+        if (currentSettings.isLoadHolidaysFromWeb()) {
+            for (int i = -2; i <= 2; i++) {
+                currentHolidays.getHolidays(getCurrentDate().getYear() + i);
+            }
+        }
     }
 
     // MODIFIES: this
@@ -124,7 +161,16 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
     // MODIFIES: this
     // EFFECTS: initializes the base display of the frame
     private void initializeBaseDisplay() {
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                if (!changedSinceLastSave || showConfirm(UNSAVED_WARNING_MESSAGE)) {
+                    dispose();
+                    System.exit(0);
+                }
+            }
+        });
         setMinimumSize(new Dimension(WIDTH, HEIGHT));
         centreComponent = new JPanel();
         setResizable(false);
@@ -165,18 +211,21 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
     // MODIFIES: this
     // EFFECTS:: adds dateEvent to currentSchedule
     public void addEvent(DateEvent dateEvent) {
+        changedSinceLastSave = true;
         currentSchedule.addEvent(dateEvent);
     }
 
     // MODIFIES: this
     // EFFECTS:: adds repeatEvent to currentSchedule
     public void addEvent(RepeatEvent repeatEvent) {
+        changedSinceLastSave = true;
         currentSchedule.addEvent(repeatEvent);
     }
 
     // MODIFIES: this
     // EFFECTS: removes dateEvent from currentSchedule, show error if failed
     public void removeEvent(DateEvent dateEvent) {
+        changedSinceLastSave = true;
         if (!currentSchedule.removeEvent(dateEvent)) {
             showError("Failed to remove event.");
         }
@@ -185,6 +234,7 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
     // MODIFIES: this
     // EFFECTS: removes repeatEvent from currentSchedule, show error if failed
     public void removeEvent(RepeatEvent repeatEvent) {
+        changedSinceLastSave = true;
         if (!currentSchedule.removeEvent(repeatEvent)) {
             showError("Failed to remove event.");
         }
@@ -196,6 +246,7 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
         boolean success = true;
         try {
             SaveLoadSystem.saveWithJackson(currentSchedule, currentSettings.getSaveFile());
+            changedSinceLastSave = false;
         } catch (IOException e) {
             e.printStackTrace();
             showError("Failed to save schedule. Please check the save file location in settings.");
@@ -212,6 +263,7 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
         try {
             currentSchedule = SaveLoadSystem.loadWithJackson(currentSettings.getSaveFile(), ScheduleContainer.class);
             currentSchedule.sort();
+            changedSinceLastSave = false;
             refresh();
         } catch (IOException e) {
             e.printStackTrace();
@@ -219,6 +271,11 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
             success = false;
         }
         return success;
+    }
+
+    // EFFECTS: shows an error dialogue
+    private void showMessage(String text) {
+        JOptionPane.showMessageDialog(this, text, "Info", JOptionPane.INFORMATION_MESSAGE);
     }
 
     // EFFECTS: shows an error dialogue
@@ -235,7 +292,7 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
     // EFFECTS: brings up prompt to choose a file location
     public String openFilePrompt(String initialPath, boolean isSave) {
         JFileChooser fileChooser = new JFileChooser(new File(initialPath).exists()
-                ? Settings.DEFAULT_DIRECTORY : initialPath);
+                ? initialPath : Settings.DEFAULT_DIRECTORY);
         fileChooser.setAcceptAllFileFilterUsed(false);
         fileChooser.setFileFilter(new FileNameExtensionFilter("JSON Files", "json"));
         fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
@@ -260,20 +317,24 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
         return file.getAbsolutePath() + (file.getAbsolutePath().endsWith(".json") ? "" : ".json");
     }
 
+    // EFFECTS: creates and returns a JMenuItem with actionListener
+    private static JMenuItem createJMenuItem(String text, ActionListener actionListener) {
+        JMenuItem menuItem = new JMenuItem(text);
+        menuItem.addActionListener(actionListener);
+        return menuItem;
+    }
+
     // EFFECTS: creates and returns the file section of the menu bar
     private JMenu createFileMenu() {
         JMenu fileMenu = new JMenu("File");
-        JMenuItem newFileItem = new JMenuItem("New");
-        JMenuItem openMenuItem = new JMenuItem("Open...");
-        JMenuItem saveMenuItem = new JMenuItem("Save");
-        JMenuItem saveAsMenuItem = new JMenuItem("Save As...");
-        JMenuItem settingsMenuItem = new JMenuItem("Settings");
-        newFileItem.addActionListener(e -> promptNewSchedule());
-        openMenuItem.addActionListener(e -> promptOpenSchedule());
-        saveMenuItem.addActionListener(e -> promptSaveSchedule(false));
-        saveAsMenuItem.addActionListener(e -> promptSaveSchedule(true));
-        settingsMenuItem.addActionListener(e -> showDisplay(Display.Settings));
+        JMenuItem newFileItem = createJMenuItem("New", e -> promptNewSchedule());
+        JMenuItem loadMenuItem = createJMenuItem("Load", e -> promptLoadSchedule());
+        JMenuItem openMenuItem = createJMenuItem("Open...", e -> promptOpenSchedule());
+        JMenuItem saveMenuItem = createJMenuItem("Save", e -> promptSaveSchedule(false));
+        JMenuItem saveAsMenuItem = createJMenuItem("Save As...", e -> promptSaveSchedule(true));
+        JMenuItem settingsMenuItem = createJMenuItem("Settings", e -> showDisplay(Display.Settings));
         fileMenu.add(newFileItem);
+        fileMenu.add(loadMenuItem);
         fileMenu.add(openMenuItem);
         fileMenu.add(saveMenuItem);
         fileMenu.add(saveAsMenuItem);
@@ -284,8 +345,9 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
     // MODIFIES: this
     // EFFECTS: shows a prompt to create new schedule, clears if picked yes
     private void promptNewSchedule() {
-        if (showConfirm("Create new schedule? This will delete you current schedule.")) {
+        if (showConfirm(NEW_FILE_WARNING_MESSAGE)) {
             currentSchedule.clearScheduleEvents();
+            changedSinceLastSave = false;
             currentSettings.setSaveFile("");
             currentSettings.save();
             refresh();
@@ -294,6 +356,9 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
 
     // EFFECTS: shows a file prompt to create new schedule, clears if picked yes
     private void promptOpenSchedule() {
+        if (changedSinceLastSave && !showConfirm(UNSAVED_OPEN_WARNING_MESSAGE)) {
+            return;
+        }
         String retVal = openFilePrompt(currentSettings.getSaveFile(), false);
         if (retVal.equals("")) {
             return;
@@ -317,6 +382,20 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
         save();
     }
 
+    // EFFECTS: shows a prompt for whether to load or not
+    private void promptLoadSchedule() {
+        if (changedSinceLastSave) {
+            if (!showConfirm(UNSAVED_LOAD_WARNING_MESSAGE)) {
+                return;
+            }
+        } else {
+            if (!showConfirm(LOAD_WARNING_MESSAGE)) {
+                return;
+            }
+        }
+        load();
+    }
+
     // EFFECTS: creates and returns the edit section of the menu bar
     private JMenu createEditMenu() {
         JMenu editMenu = new JMenu("Edit");
@@ -329,12 +408,9 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
     // EFFECTS: creates and returns the view section of the menu bar
     private JMenu createViewMenu() {
         JMenu viewMenu = new JMenu("View");
-        JMenuItem showEventsMenuItem = new JMenuItem("All Events");
-        JMenuItem showMonthMenuItem = new JMenuItem("Calendar");
-        JMenuItem showHolidayMenuItem = new JMenuItem("Holidays");
-        showEventsMenuItem.addActionListener(e -> showDisplay(Display.AllEvents));
-        showMonthMenuItem.addActionListener(e -> showDisplay(Display.MonthCalendar));
-        showHolidayMenuItem.addActionListener(e -> showDisplay(Display.Holidays));
+        JMenuItem showEventsMenuItem = createJMenuItem("All Events", e -> showDisplay(Display.AllEvents));
+        JMenuItem showMonthMenuItem = createJMenuItem("Calendar", e -> showDisplay(Display.MonthCalendar));
+        JMenuItem showHolidayMenuItem = createJMenuItem("Holidays", e -> showDisplay(Display.Holidays));
         viewMenu.add(createViewEventsMenu());
         viewMenu.add(showEventsMenuItem);
         viewMenu.add(showMonthMenuItem);
@@ -345,15 +421,16 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
     // EFFECTS: creates and returns the events section of the view menu
     private JMenu createViewEventsMenu() {
         JMenu eventsMenu = new JMenu("Events");
-        JMenuItem todayMenuItem = new JMenuItem("Today");
-        JMenuItem weekMenuItem = new JMenuItem("This Week");
-        JMenuItem findMenuItem = new JMenuItem("Find");
-        todayMenuItem.addActionListener(e -> showEventsForDates(getCurrentDate(), getCurrentDate()));
-        weekMenuItem.addActionListener(e -> showEventsForDates(
+        JMenuItem todayMenuItem = createJMenuItem("Today",
+                e -> showEventsForDates(getCurrentDate(), getCurrentDate()));
+        JMenuItem weekMenuItem = createJMenuItem("This Week", e -> showEventsForDates(
                 TimeUtility.atStartOfWeek(getCurrentDate()), TimeUtility.atEndOfWeek(getCurrentDate())));
-        findMenuItem.addActionListener(e -> openFindWindow());
+        JMenuItem monthMenuItem = createJMenuItem("This Month", e -> showEventsForDates(
+                getCurrentDate().withDayOfMonth(1), getCurrentDate().withDayOfMonth(getCurrentDate().lengthOfMonth())));
+        JMenuItem findMenuItem = createJMenuItem("Find", e -> openFindWindow());
         eventsMenu.add(todayMenuItem);
         eventsMenu.add(weekMenuItem);
+        eventsMenu.add(monthMenuItem);
         eventsMenu.add(findMenuItem);
         return eventsMenu;
     }
@@ -361,8 +438,7 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
     // EFFECTS: creates and returns the help section of the menu bar
     private JMenu createHelpMenu() {
         JMenu helpMenu = new JMenu("Help");
-        JMenuItem showHelpMenuItem = new JMenuItem("Show Help");
-        showHelpMenuItem.addActionListener(e -> showDisplay(Display.Help));
+        JMenuItem showHelpMenuItem = createJMenuItem("Show Help", e -> showDisplay(Display.Help));
         helpMenu.add(showHelpMenuItem);
         return helpMenu;
     }
@@ -487,7 +563,7 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
         boolean[] hasEventsForDates = currentSchedule.hasEvents(yearMonth,
                 currentSettings.isShowDate(), currentSettings.isShowRepeat());
         boolean[] hasHolidaysForDates = currentSettings.isShowHolidaysOnCalendar()
-                ? currentHolidays.createHasHolidaysForYearMonth(yearMonth, currentSettings.isMergeHoliday())
+                ? currentHolidays.createHasHolidaysForYearMonth(yearMonth)
                 : new boolean[lastDay];
         int today = (getCurrentDate().getYear() == yearMonth.getYear()
                 && getCurrentDate().getMonthValue() == yearMonth.getMonthValue())
@@ -597,6 +673,19 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
         }
     }
 
+    // EFFECTS: returns a formatted string for a title of events between two dates
+    private String formatEventTextFor(LocalDate startDate, LocalDate endDate) {
+        String titleText = "Events ";
+        if (startDate.equals(endDate)) {
+            titleText = titleText.concat("for " + startDate.format(DATE_FORMATTER)
+                    + (startDate.equals(getCurrentDate()) ? " (Today)" : ""));
+        } else {
+            titleText = titleText.concat("between " + startDate.format(DATE_FORMATTER)
+                    + "~" + endDate.format(DATE_FORMATTER));
+        }
+        return titleText;
+    }
+
     // MODIFIES: this
     // EFFECTS: creates a panel with a list of events in the schedule
     private JPanel createEventsDisplay(LocalDate startDate, LocalDate endDate) {
@@ -605,14 +694,7 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
         if (!isDate && startDate.equals(LocalDate.MIN) && endDate.equals(LocalDate.MAX)) {
             titleText = "All Events";
         } else {
-            titleText = "Events ";
-            if (isDate) {
-                titleText = titleText.concat("for " + startDate.format(DATE_FORMATTER)
-                        + (startDate.equals(getCurrentDate()) ? " (Today)" : ""));
-            } else {
-                titleText = titleText.concat("between " + startDate.format(DATE_FORMATTER)
-                        + "~" + endDate.format(DATE_FORMATTER));
-            }
+            titleText = formatEventTextFor(startDate, endDate);
         }
         List<DateEvent> dateEvents = currentSchedule.getDateEventsBetweenDates(startDate, endDate);
         List<RepeatEvent> repeatEvents = currentSchedule.getRepeatEventsBetweenDates(startDate, endDate);
@@ -631,7 +713,7 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
             mainPanel.add(createToolPanel(e -> showEventsForDate(selectedDate.minusDays(1)),
                     e -> showEventsForDate(selectedDate.plusDays(1))), BorderLayout.PAGE_END);
             if (currentSettings.isShowHolidaysOnEvents()) {
-                holidays = currentHolidays.getHolidayForDate(selectedDate, currentSettings.isMergeHoliday());
+                holidays = currentHolidays.getHolidayForDate(selectedDate);
             }
         }
         if (dateEvents.size() + repeatEvents.size() < 1 && holidays.size() < 1) {
@@ -722,8 +804,8 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
     private void showHolidays() {
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(BG_PANEL_COLOR);
-        String holidayText = currentHolidays.getFormattedHolidaysText(selectedHolidaysYear,
-                getCurrentDate(), currentSettings.isMergeHoliday(), currentSettings.isDimPastEvents());
+        String holidayText = currentHolidays.getFormattedHolidaysText(selectedHolidaysYear, getCurrentDate(),
+                currentSettings.isDimPastEvents());
         JLabel holidayListLabel = new JLabel(holidayText);
         holidayListLabel.setVerticalAlignment(SwingConstants.TOP);
         holidayListLabel.setHorizontalAlignment(SwingConstants.LEFT);
@@ -749,123 +831,25 @@ public class VisualEditor extends JFrame implements SaveLoadSystem, FormatterPat
     }
 
     // MODIFIES: this
-    // EFFECTS: shows the setting display
+    // EFFECTS: shows the settings panel
     private void showSettings() {
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        JPanel innerPanel = new JPanel(new BorderLayout());
-        JButton applyButton = new JButton("Apply");
-        Settings newSettings = new Settings(currentSettings);
-        applyButton.addActionListener(e -> {
-            currentSettings = newSettings;
-            if (!currentSettings.save()) {
-                showError("You settings could not be saved. Make sure you have a "
-                        + Settings.DEFAULT_DIRECTORY + " directory next to your application.");
-            }
-        });
-        addSettingsPanels(innerPanel, newSettings);
-        mainPanel.add(new TitleLabel("Settings"), BorderLayout.PAGE_START);
-        mainPanel.add(innerPanel, BorderLayout.CENTER);
-        mainPanel.add(applyButton, BorderLayout.PAGE_END);
-        innerPanel.setOpaque(false);
-        mainPanel.setBackground(BG_PANEL_COLOR);
-        changeCentreComponentTo(mainPanel, Display.Settings);
+        if (settingsFrame == null || settingsFrame.quitBack(false)) {
+            settingsFrame = new SettingsFrame(this, currentSettings);
+        }
     }
 
-    // MODIFIES: innerPanel, settings
-    // EFFECTS: adds all the settings to innerPanel
-    private void addSettingsPanels(JPanel innerPanel, Settings settings) {
-        JPanel listPanel = new JPanel();
-        listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.PAGE_AXIS));
-        addLoadSettings(listPanel, settings);
-        addEventSettings(listPanel, settings);
-        addHolidaysSettings(listPanel, settings);
-        addColorSettings(listPanel, settings);
-        listPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        listPanel.setMaximumSize(listPanel.getMinimumSize());
-        listPanel.setOpaque(false);
-        innerPanel.add(listPanel, BorderLayout.PAGE_START);
+    // MODIFIES: this
+    // EFFECTS: removes reference to settings frame
+    public void removeSettingsFrame() {
+        settingsFrame = null;
     }
 
-    // MODIFIES: listPanel, settings
-    // EFFECTS: adds load options to panel
-    private void addLoadSettings(JPanel listPanel, Settings settings) {
-        JCheckBox colorChooser = new JCheckBox("Load on start");
-        colorChooser.setSelected(settings.isLoadOnStart());
-        colorChooser.addItemListener(e ->
-                settings.setLoadOnStart(e.getStateChange() == ItemEvent.SELECTED));
-        colorChooser.setAlignmentX(Component.LEFT_ALIGNMENT);
-        addFilePicker(listPanel, settings);
-        listPanel.add(colorChooser);
-    }
-
-    // MODIFIES: listPanel, settings
-    // EFFECTS: create the panel for selecting file
-    private void addFilePicker(JPanel listPanel, Settings settings) {
-        JLabel label = new JLabel("  File Location");
-        JTextField fileField = new JTextField(settings.getSaveFile());
-        fileField.setEnabled(false);
-        fileField.setAlignmentX(Component.LEFT_ALIGNMENT);
-        listPanel.add(label);
-        listPanel.add(fileField);
-        fileField.setPreferredSize(new Dimension(WIDTH, fileField.getPreferredSize().height));
-        fileField.setMaximumSize(new Dimension(WIDTH, fileField.getPreferredSize().height));
-    }
-
-    // MODIFIES: listPanel, settings
-    // EFFECTS: creates the panel for color options
-    private void addColorSettings(JPanel listPanel, Settings settings) {
-        JCheckBox bwBox = new JCheckBox("B&W mode");
-        JCheckBox flipTextBox = new JCheckBox("Flip text color on highlight");
-        bwBox.setSelected(settings.isBwMode());
-        flipTextBox.setSelected(settings.isFlipTextColor());
-        bwBox.addItemListener(e -> settings.setBwMode(e.getStateChange() == ItemEvent.SELECTED));
-        flipTextBox.addItemListener(e -> settings.setFlipTextColor(e.getStateChange() == ItemEvent.SELECTED));
-        ColorInputPanel colorChooser = new ColorInputPanel("Highlight color:", settings.getHighlightColor());
-        colorChooser.addActionListener(e -> settings.setHighlightColor(colorChooser.getColor()));
-        listPanel.add(bwBox);
-        listPanel.add(colorChooser);
-        listPanel.add(flipTextBox);
-        colorChooser.setAlignmentX(Component.LEFT_ALIGNMENT);
-    }
-
-    // MODIFIES: listPanel, settings
-    // EFFECTS: creates the panel for event options
-    private void addEventSettings(JPanel listPanel, Settings settings) {
-        JCheckBox showDateBox = new JCheckBox("Show date events in Calendar");
-        JCheckBox showRepeatBox = new JCheckBox("Show repeat events in Calendar");
-        JCheckBox dimBox = new JCheckBox("Dim past events");
-        JCheckBox confirmBox = new JCheckBox("Confirm on delete");
-        showDateBox.setSelected(settings.isShowDate());
-        showRepeatBox.setSelected(settings.isShowRepeat());
-        dimBox.setSelected(settings.isDimPastEvents());
-        confirmBox.setSelected(settings.isConfirmToDelete());
-        showDateBox.addItemListener(e -> settings.setShowDate(e.getStateChange() == ItemEvent.SELECTED));
-        showRepeatBox.addItemListener(e -> settings.setShowRepeat(e.getStateChange() == ItemEvent.SELECTED));
-        dimBox.addItemListener(e -> settings.setDimPastEvents(e.getStateChange() == ItemEvent.SELECTED));
-        confirmBox.addItemListener(e -> settings.setConfirmToDelete(e.getStateChange() == ItemEvent.SELECTED));
-        listPanel.add(showDateBox);
-        listPanel.add(showRepeatBox);
-        listPanel.add(dimBox);
-        listPanel.add(confirmBox);
-    }
-
-    // MODIFIES: listPanel, settings
-    // EFFECTS: creates the panel for holiday options
-    private void addHolidaysSettings(JPanel listPanel, Settings settings) {
-        JCheckBox inCalendarBox = new JCheckBox("Show holidays in Calendar");
-        JCheckBox inEventsBox = new JCheckBox("Show holidays in Events View");
-        JCheckBox mergeHolidaysBox = new JCheckBox("Merge holidays on the same day");
-        inCalendarBox.setSelected(settings.isShowHolidaysOnCalendar());
-        inEventsBox.setSelected(settings.isShowHolidaysOnEvents());
-        mergeHolidaysBox.setSelected(settings.isMergeHoliday());
-        inCalendarBox.addItemListener(e -> settings.setShowHolidaysOnCalendar(
-                e.getStateChange() == ItemEvent.SELECTED));
-        inEventsBox.addItemListener(e -> settings.setShowHolidaysOnEvents(
-                e.getStateChange() == ItemEvent.SELECTED));
-        mergeHolidaysBox.addItemListener(e -> settings.setMergeHoliday(e.getStateChange() == ItemEvent.SELECTED));
-        listPanel.add(inCalendarBox);
-        listPanel.add(inEventsBox);
-        listPanel.add(mergeHolidaysBox);
+    // MODIFIES: this
+    // EFFECTS: applies settings, return true if it could be saved to disk
+    public boolean applySettings(Settings newSettings) {
+        currentSettings.copy(newSettings);
+        currentHolidays.setSettings(currentSettings.isMergeHoliday(), currentSettings.isLoadHolidaysFromWeb());
+        return currentSettings.save();
     }
 
     // MODIFIES: this
